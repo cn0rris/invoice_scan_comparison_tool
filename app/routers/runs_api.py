@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from app.config import settings
 from app.db import compute_summary, db, new_id
 from app.models.api_schemas import StartRunRequest, StartRunResponse
+from app.orchestrator.checksum import compute_run_checksum
 from app.orchestrator.runner import start_run
 
 router = APIRouter()
@@ -31,8 +32,21 @@ async def create_run(body: StartRunRequest, request: Request):
     invoice_dir = _resolve_under_root(body.invoice_dir, settings.invoice_dir)
     ground_truth_dir = _resolve_under_root(body.ground_truth_dir, settings.ground_truth_dir)
 
+    checksum = await compute_run_checksum(invoice_dir, ground_truth_dir, body.prompt, body.models)
+
+    if not body.force:
+        existing = await db.find_completed_run_by_checksum(checksum)
+        if existing is not None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "An identical run (same invoices, ground truth, prompt, and models) already completed.",
+                    "existing_run": existing,
+                },
+            )
+
     run_id = new_id()
-    await db.create_run(run_id, body.prompt, str(invoice_dir), str(ground_truth_dir), body.models)
+    await db.create_run(run_id, body.prompt, str(invoice_dir), str(ground_truth_dir), body.models, checksum)
 
     task = asyncio.create_task(start_run(run_id, body.models, body.prompt, invoice_dir, ground_truth_dir))
     request.app.state.background_tasks.add(task)

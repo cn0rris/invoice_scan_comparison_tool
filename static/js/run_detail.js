@@ -1,6 +1,6 @@
 (function () {
   const state = {
-    runId: null,
+    runId: window.RUN_ID,
     rows: new Map(), // result_id -> {id, model_id, invoice_stem, status, mistake_count, error_message}
     ws: null,
   };
@@ -9,66 +9,6 @@
     return String(str ?? "").replace(/[&<>"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
     }[c]));
-  }
-
-  async function fetchModels() {
-    const container = document.getElementById("ollama-models");
-    try {
-      const resp = await fetch("/api/models");
-      const data = await resp.json();
-      if (!data.ollama.available) {
-        container.innerHTML = `<p class="muted">Ollama not reachable${data.ollama.error ? ": " + escapeHtml(data.ollama.error) : ""} — is it running natively on the host?</p>`;
-        return;
-      }
-      if (data.ollama.models.length === 0) {
-        container.innerHTML = '<p class="muted">Ollama is reachable but no models are pulled.</p>';
-        return;
-      }
-      container.innerHTML = data.ollama.models
-        .map(
-          (m) => `<label class="checkbox-row"><input type="checkbox" name="model" value="${escapeHtml(m)}" /> ${escapeHtml(m)}</label>`
-        )
-        .join("");
-    } catch (e) {
-      container.innerHTML = `<p class="muted">Failed to load Ollama models: ${escapeHtml(String(e))}</p>`;
-    }
-  }
-
-  function selectedModels() {
-    return Array.from(document.querySelectorAll('input[name="model"]:checked')).map((el) => el.value);
-  }
-
-  async function submitRun() {
-    const models = selectedModels();
-    if (models.length === 0) {
-      alert("Select at least one model.");
-      return;
-    }
-    const prompt = document.getElementById("prompt").value;
-    const invoiceDir = document.getElementById("invoice-dir").value;
-    const groundTruthDir = document.getElementById("ground-truth-dir").value;
-
-    const resp = await fetch("/api/runs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ models, prompt, invoice_dir: invoiceDir, ground_truth_dir: groundTruthDir }),
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      alert(`Failed to start run: ${err.detail || resp.statusText}`);
-      return;
-    }
-    const data = await resp.json();
-    history.replaceState(null, "", `?run=${data.run_id}`);
-    beginRun(data.run_id);
-  }
-
-  function beginRun(runId) {
-    state.runId = runId;
-    state.rows = new Map();
-    document.getElementById("progress-panel").classList.remove("hidden");
-    document.getElementById("summary-panel").classList.add("hidden");
-    connectWebSocket(runId);
   }
 
   function connectWebSocket(runId) {
@@ -89,6 +29,7 @@
       for (const r of msg.results) {
         state.rows.set(r.id, r);
       }
+      renderMeta(msg.run);
       updateProgress(msg.run.completed_pairs, msg.run.total_pairs);
       renderMatrix();
       if (msg.summary) {
@@ -102,6 +43,7 @@
       updateProgress(msg.completed, msg.total);
     } else if (msg.type === "run_complete") {
       renderSummary(msg.summary);
+      document.getElementById("run-meta-status").textContent = msg.summary.status;
     } else if (msg.type === "error") {
       alert(msg.message);
     }
@@ -115,6 +57,14 @@
 
   function statusIcon(status) {
     return { success: "✓", error: "✗", running: "…", pending: "·", no_ground_truth: "n/a" }[status] || status;
+  }
+
+  function renderMeta(run) {
+    document.getElementById("run-meta-started").textContent = new Date(run.started_at || run.created_at).toLocaleString();
+    document.getElementById("run-meta-status").textContent = run.status;
+    document.getElementById("run-meta-models").textContent = JSON.parse(run.models_json).join(", ");
+    document.getElementById("run-meta-prompt").textContent = run.prompt_text;
+    document.getElementById("run-meta-checksum").textContent = run.checksum || "(none)";
   }
 
   function renderMatrix() {
@@ -218,32 +168,26 @@
     });
   }
 
-  async function initFromUrl() {
-    const params = new URLSearchParams(location.search);
-    const runId = params.get("run");
-    if (!runId) return;
-    state.runId = runId;
-    const resp = await fetch(`/api/runs/${runId}`);
+  async function init() {
+    const resp = await fetch(`/api/runs/${state.runId}`);
     if (!resp.ok) return;
     const data = await resp.json();
     for (const r of data.results) {
       state.rows.set(r.id, r);
     }
-    document.getElementById("progress-panel").classList.remove("hidden");
+    renderMeta(data.run);
     updateProgress(data.run.completed_pairs, data.run.total_pairs);
     renderMatrix();
     if (data.run.status === "completed" || data.run.status === "failed") {
-      const summaryResp = await fetch(`/api/runs/${runId}/summary`);
+      const summaryResp = await fetch(`/api/runs/${state.runId}/summary`);
       renderSummary(await summaryResp.json());
     } else {
-      connectWebSocket(runId);
+      connectWebSocket(state.runId);
     }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    fetchModels();
     initModalClose();
-    document.getElementById("start-run-btn").addEventListener("click", submitRun);
-    initFromUrl();
+    init();
   });
 })();

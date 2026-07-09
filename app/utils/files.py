@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 INVOICE_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
@@ -19,3 +20,32 @@ def load_ground_truth_text(invoice_path: Path, ground_truth_dir: Path) -> str | 
     if not gt_path.exists():
         return None
     return gt_path.read_text()
+
+
+def ground_truth_status(invoice_path: Path, ground_truth_dir: Path) -> str:
+    """One of 'valid' | 'invalid' | 'missing' — used for display on the invoices page."""
+    from app.models.invoice import InvoiceExtraction  # local import: avoids a module-load cycle
+
+    gt_text = load_ground_truth_text(invoice_path, ground_truth_dir)
+    if gt_text is None:
+        return "missing"
+    try:
+        InvoiceExtraction.model_validate_json(gt_text)
+    except Exception:  # noqa: BLE001 - any malformed/schema-mismatched GT file is just "invalid" for display
+        return "invalid"
+    return "valid"
+
+
+def describe_invoices(invoice_dir: Path, ground_truth_dir: Path) -> list[dict]:
+    invoices = []
+    for path in list_invoices(invoice_dir):
+        stat = path.stat()
+        invoices.append(
+            {
+                "filename": path.name,
+                "size_bytes": stat.st_size,
+                "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+                "ground_truth_status": ground_truth_status(path, ground_truth_dir),
+            }
+        )
+    return invoices

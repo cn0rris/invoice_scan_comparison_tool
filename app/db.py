@@ -33,7 +33,22 @@ class Database:
         await self._conn.execute("PRAGMA foreign_keys=ON")
         schema_sql = (Path(__file__).parent / "schema.sql").read_text()
         await self._conn.executescript(schema_sql)
+        await self._migrate()
         await self._conn.commit()
+
+    async def _migrate(self) -> None:
+        """Lightweight forward-only migration for columns added after a DB file
+        already exists on disk. CREATE TABLE IF NOT EXISTS in schema.sql only
+        covers brand-new databases."""
+        cur = await self._conn.execute("PRAGMA table_info(runs)")
+        columns = {row[1] for row in await cur.fetchall()}
+        if "checksum" not in columns:
+            await self._conn.execute("ALTER TABLE runs ADD COLUMN checksum TEXT")
+        # Always ensure this (both fresh DBs and ones just migrated need it — the
+        # index can't live in schema.sql's CREATE TABLE IF NOT EXISTS because that
+        # statement is a no-op, and therefore never adds the column, on a
+        # pre-existing pre-checksum database).
+        await self._conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_checksum ON runs(checksum)")
 
     async def close(self) -> None:
         if self._conn is not None:
@@ -48,16 +63,30 @@ class Database:
     # --- runs ---
 
     async def create_run(
-        self, run_id: str, prompt_text: str, invoice_dir: str, ground_truth_dir: str, models: list[str]
+        self,
+        run_id: str,
+        prompt_text: str,
+        invoice_dir: str,
+        ground_truth_dir: str,
+        models: list[str],
+        checksum: str,
     ) -> None:
         async with self._write_lock:
             await self.conn.execute(
                 """INSERT INTO runs (id, created_at, status, prompt_text, invoice_dir,
-                       ground_truth_dir, models_json, total_pairs, completed_pairs)
-                   VALUES (?, ?, 'pending', ?, ?, ?, ?, 0, 0)""",
-                (run_id, now_iso(), prompt_text, invoice_dir, ground_truth_dir, json.dumps(models)),
+                       ground_truth_dir, models_json, total_pairs, completed_pairs, checksum)
+                   VALUES (?, ?, 'pending', ?, ?, ?, ?, 0, 0, ?)""",
+                (run_id, now_iso(), prompt_text, invoice_dir, ground_truth_dir, json.dumps(models), checksum),
             )
             await self.conn.commit()
+
+    async def find_completed_run_by_checksum(self, checksum: str) -> Optional[dict]:
+        cur = await self.conn.execute(
+            "SELECT * FROM runs WHERE checksum=? AND status='completed' ORDER BY created_at DESC LIMIT 1",
+            (checksum,),
+        )
+        row = await cur.fetchone()
+        return dict(row) if row else None
 
     async def set_run_running(self, run_id: str, total_pairs: int) -> None:
         async with self._write_lock:

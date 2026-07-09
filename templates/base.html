@@ -13,9 +13,16 @@
   <div id="app">
     <header>
       <div class="header-inner">
-        <div class="logo">
-          <img class="logo-key" src="/static/images/kestrel.png" alt="Kestrel logo" />
-          Invoice Scan Comparison Tool
+        <div class="header-top">
+          <div class="logo">
+            <img class="logo-key" src="/static/images/kestrel.png" alt="Kestrel logo" />
+            Invoice Scan Comparison Tool
+          </div>
+          <nav>
+            <a href="/" class="nav-link{% if active_page == 'home' %} active{% endif %}">Home</a>
+            <a href="/invoices" class="nav-link{% if active_page == 'invoices' %} active{% endif %}">Invoices</a>
+            <a href="/runs" class="nav-link{% if active_page == 'runs' %} active{% endif %}">Runs</a>
+          </nav>
         </div>
         <p class="subtitle">Evaluate how different LLMs extract data from legal invoices</p>
         <p class="in-progress-note">This project is still in-progress.</p>

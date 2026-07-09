@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <h2>Upload Invoices</h2>
+  <p class="muted">
+    Uploaded files are stored alongside the existing invoices. Add a matching ground-truth JSON
+    file separately (named after the invoice's filename stem) to make an invoice scoreable.
+  </p>
+  <form id="upload-form" class="upload-form">
+    <input type="file" id="upload-input" multiple accept=".pdf,.png,.jpg,.jpeg" />
+    <button type="submit" id="upload-btn" class="btn btn-primary">Upload</button>
+  </form>
+  <div id="upload-result"></div>
+</section>
+
+<section class="panel">
+  <h2>Invoices</h2>
+  <div id="invoices-table-wrapper">
+    <p class="muted">Loading…</p>
+  </div>
+</section>
+
+<script src="/static/js/invoices.js"></script>
+{% endblock %}

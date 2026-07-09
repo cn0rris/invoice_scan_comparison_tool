@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS runs (
     models_json     TEXT NOT NULL,
     total_pairs     INTEGER NOT NULL DEFAULT 0,
     completed_pairs INTEGER NOT NULL DEFAULT 0,
-    error_message   TEXT
+    error_message   TEXT,
+    checksum        TEXT
 );
 
 CREATE TABLE IF NOT EXISTS results (
@@ -34,3 +35,6 @@ CREATE TABLE IF NOT EXISTS results (
 
 CREATE INDEX IF NOT EXISTS idx_results_run ON results(run_id);
 CREATE INDEX IF NOT EXISTS idx_results_run_model ON results(run_id, model_id);
+-- idx_runs_checksum is created in Database._migrate() instead of here, since on a
+-- pre-existing (pre-checksum-column) database this index would need the column
+-- added first — see app/db.py.

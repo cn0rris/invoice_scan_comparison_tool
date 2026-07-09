@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="panel">
+  <h2>Run Details</h2>
+  <dl class="run-meta">
+    <dt>Started</dt><dd id="run-meta-started">—</dd>
+    <dt>Status</dt><dd id="run-meta-status">—</dd>
+    <dt>Models</dt><dd id="run-meta-models">—</dd>
+    <dt>Checksum</dt><dd id="run-meta-checksum" class="mono">—</dd>
+    <dt>Prompt</dt><dd><pre id="run-meta-prompt"></pre></dd>
+  </dl>
+</section>
+
+<section id="progress-panel" class="panel">
+  <h2>Progress</h2>
+  <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+  <p id="progress-text"></p>
+  <div id="live-table-wrapper"></div>
+</section>
+
+<section id="summary-panel" class="panel hidden">
+  <h2>Summary</h2>
+  <div id="summary-per-model"></div>
+  <h3>Mistakes per model &times; invoice</h3>
+  <div id="summary-matrix"></div>
+</section>
+
+<div id="detail-modal" class="hidden">
+  <div id="detail-modal-content">
+    <button id="detail-modal-close">&times;</button>
+    <pre id="detail-modal-body"></pre>
+  </div>
+</div>
+
+<script>window.RUN_ID = {{ run_id | tojson }};</script>
+<script src="/static/js/run_detail.js"></script>
+{% endblock %}

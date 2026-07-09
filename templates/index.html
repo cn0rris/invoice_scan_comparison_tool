@@ -36,33 +36,22 @@
     </label>
     <p class="muted">
       Must resolve under the mounted <code>./data</code> volume. Mount additional folders under
-      <code>./data</code> in <code>docker-compose.yml</code> to use a different set.
+      <code>./data</code> in <code>docker-compose.yml</code> to use a different set. Manage
+      invoice files on the <a href="/invoices">Invoices</a> page.
     </p>
   </div>
 
-  <button id="start-run-btn">Start Run</button>
+  <button id="start-run-btn" class="btn btn-primary">Start Run</button>
 </section>
 
-<section id="progress-panel" class="panel hidden">
-  <h2>Run Progress</h2>
-  <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
-  <p id="progress-text"></p>
-  <div id="live-table-wrapper"></div>
-</section>
-
-<section id="summary-panel" class="panel hidden">
-  <h2>Summary</h2>
-  <div id="summary-per-model"></div>
-  <h3>Mistakes per model &times; invoice</h3>
-  <div id="summary-matrix"></div>
-</section>
-
-<div id="detail-modal" class="hidden">
-  <div id="detail-modal-content">
-    <button id="detail-modal-close">&times;</button>
-    <pre id="detail-modal-body"></pre>
+<section id="duplicate-warning" class="panel panel-warning hidden">
+  <h2>Identical run already exists</h2>
+  <p id="duplicate-message"></p>
+  <div class="button-row">
+    <a id="duplicate-view-link" href="#" class="btn btn-secondary">View existing run</a>
+    <button id="duplicate-force-btn" class="btn btn-primary">Run anyway</button>
   </div>
-</div>
+</section>
 
-<script src="/static/js/app.js"></script>
+<script src="/static/js/home.js"></script>
 {% endblock %}

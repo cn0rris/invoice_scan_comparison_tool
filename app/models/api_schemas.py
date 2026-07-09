@@ -8,6 +8,7 @@ class StartRunRequest(BaseModel):
     prompt: str
     invoice_dir: Optional[str] = None
     ground_truth_dir: Optional[str] = None
+    force: bool = False
 
 
 class StartRunResponse(BaseModel):

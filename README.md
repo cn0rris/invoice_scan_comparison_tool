@@ -33,14 +33,29 @@ ollama pull llama3.2-vision  # or another vision-capable model
 The app ships with three tiny synthetic sample invoices in `data/invoices/` (two PDFs, one PNG)
 and matching ground truth in `data/ground_truth/`, so you can try a run immediately.
 
-## Using your own invoices
+## Pages
 
-Drop invoice files (`.pdf`, `.png`, `.jpg`) into `data/invoices/`, and a matching ground-truth JSON
-file into `data/ground_truth/` named after the invoice's filename stem (e.g. `my_invoice.pdf` needs
-`my_invoice.json`). The ground truth JSON must match the extraction schema in
-`app/models/invoice.py` (`InvoiceExtraction`) — see the sample files in `data/ground_truth/` for
-the shape. Both directories are Docker volumes, so changes on the host are picked up without a
-rebuild; restart is not needed, just start a new run from the UI.
+- **Home** (`/`) — pick models, edit the extraction prompt, and start a run. On submit you're
+  redirected to that run's own page.
+- **Invoices** (`/invoices`) — lists every invoice file with its ground-truth status
+  (valid/invalid/missing), and is where you upload new invoices. Uploaded files land directly in
+  `data/invoices/` — the same folder used by every run. Add a matching ground-truth JSON file into
+  `data/ground_truth/` separately, named after the invoice's filename stem (e.g. `my_invoice.pdf`
+  needs `my_invoice.json`) to make it scoreable. The ground truth JSON must match the extraction
+  schema in `app/models/invoice.py` (`InvoiceExtraction`) — see the sample files in
+  `data/ground_truth/` for the shape. Both directories are Docker volumes, so changes on the host
+  are picked up without a rebuild.
+- **Runs** (`/runs`) — every run ever started, with its start time, status, and models. Click one
+  to open its detail page (live progress while running, full summary once complete).
+
+### Avoiding accidental re-runs
+
+Every run is fingerprinted with a checksum over everything that determines its outcome: the bytes
+of every invoice file, the bytes of every matched ground-truth file, the exact prompt text, and
+the selected models (including, for Ollama models, the model's content digest — so a model
+silently re-pulled under the same name still counts as different). If you start a run that's an
+exact match for a previously *completed* run, the Home page shows a warning with a link to the
+existing run instead of silently re-running it; you can still proceed via "Run anyway."
 
 ## Development (without Docker)
 
@@ -68,3 +83,5 @@ natively) or for image-only invoices.
 - **Comparison**: `app/diff/engine.py` does a deterministic, rule-based field-by-field diff
   (missing/extra fields, wrong values, numeric tolerance, date normalization, line-item alignment)
   — no LLM is used to describe failures.
+- **Run fingerprinting**: `app/orchestrator/checksum.py` hashes the run's inputs so an identical
+  run can be detected before it's re-executed (see "Avoiding accidental re-runs" above).
