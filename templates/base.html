@@ -4,15 +4,33 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Invoice Scan Comparison Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
-  <header>
-    <h1>Invoice Scan Comparison Tool</h1>
-    <p class="subtitle">Evaluate how different LLMs extract data from legal invoices</p>
-  </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
+  <div id="app">
+    <header>
+      <div class="header-inner">
+        <div class="logo">
+          <img class="logo-key" src="/static/images/kestrel.png" alt="Kestrel logo" />
+          Invoice Scan Comparison Tool
+        </div>
+        <p class="subtitle">Evaluate how different LLMs extract data from legal invoices</p>
+        <p class="in-progress-note">This project is still in-progress.</p>
+      </div>
+    </header>
+    <main>
+      <div class="main-inner">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+    <footer>
+      <div class="footer-inner">
+        <p>Invoice Scan Comparison Tool — part of the Kestrel project</p>
+      </div>
+    </footer>
+  </div>
 </body>
 </html>
