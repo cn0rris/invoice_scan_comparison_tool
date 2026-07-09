@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section id="setup-panel" class="panel">
+  <div class="field-group">
+    <h2>Models</h2>
+    <fieldset id="anthropic-models">
+      <legend>Anthropic (cloud)</legend>
+      {% for model in anthropic_models %}
+      <label class="checkbox-row">
+        <input type="checkbox" name="model" value="{{ model }}" checked />
+        {{ model }}
+      </label>
+      {% endfor %}
+    </fieldset>
+    <fieldset id="ollama-models">
+      <legend>Ollama (local)</legend>
+      <p class="muted">Loading…</p>
+    </fieldset>
+  </div>
+
+  <div class="field-group">
+    <h2>Extraction Prompt</h2>
+    <textarea id="prompt" rows="14">{{ default_prompt }}</textarea>
+  </div>
+
+  <div class="field-group">
+    <h2>Data</h2>
+    <label class="text-row">
+      Invoice folder
+      <input type="text" id="invoice-dir" value="{{ default_invoice_dir }}" />
+    </label>
+    <label class="text-row">
+      Ground truth folder
+      <input type="text" id="ground-truth-dir" value="{{ default_ground_truth_dir }}" />
+    </label>
+    <p class="muted">
+      Must resolve under the mounted <code>./data</code> volume. Mount additional folders under
+      <code>./data</code> in <code>docker-compose.yml</code> to use a different set.
+    </p>
+  </div>
+
+  <button id="start-run-btn">Start Run</button>
+</section>
+
+<section id="progress-panel" class="panel hidden">
+  <h2>Run Progress</h2>
+  <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+  <p id="progress-text"></p>
+  <div id="live-table-wrapper"></div>
+</section>
+
+<section id="summary-panel" class="panel hidden">
+  <h2>Summary</h2>
+  <div id="summary-per-model"></div>
+  <h3>Mistakes per model &times; invoice</h3>
+  <div id="summary-matrix"></div>
+</section>
+
+<div id="detail-modal" class="hidden">
+  <div id="detail-modal-content">
+    <button id="detail-modal-close">&times;</button>
+    <pre id="detail-modal-body"></pre>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+{% endblock %}

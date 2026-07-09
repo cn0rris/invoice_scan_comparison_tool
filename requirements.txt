@@ -1,0 +1,12 @@
+fastapi==0.139.0
+uvicorn[standard]==0.51.0
+jinja2==3.1.6
+python-multipart==0.0.32
+anthropic==0.116.0
+httpx==0.28.1
+pdf2image==1.17.0
+pillow==12.3.0
+aiosqlite==0.22.1
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dateutil==2.9.0.post0

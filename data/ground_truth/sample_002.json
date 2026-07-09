@@ -1,0 +1,31 @@
+{
+  "invoice_number": "INV-1002",
+  "invoice_date": "2024-03-22",
+  "vendor_name": "Bright & Fields LLP",
+  "client_name": "Globex Industries",
+  "matter_number": "M-2024-0099",
+  "line_items": [
+    {
+      "description": "Review merger documents",
+      "hours": 5.0,
+      "rate": 300.0,
+      "amount": 1500.0
+    },
+    {
+      "description": "Client meeting re: due diligence",
+      "hours": 2.0,
+      "rate": 300.0,
+      "amount": 600.0
+    },
+    {
+      "description": "Deposition prep (flat fee)",
+      "hours": null,
+      "rate": null,
+      "amount": 950.0
+    }
+  ],
+  "subtotal": 3050.0,
+  "tax": 244.0,
+  "total": 3294.0,
+  "currency": "USD"
+}

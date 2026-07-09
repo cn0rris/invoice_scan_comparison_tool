@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DB_PATH=/data/db/app.db
+      - INVOICE_DIR=/data/invoices
+      - GROUND_TRUTH_DIR=/data/ground_truth
+    volumes:
+      - ./data/invoices:/data/invoices
+      - ./data/ground_truth:/data/ground_truth
+      - ./data/db:/data/db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

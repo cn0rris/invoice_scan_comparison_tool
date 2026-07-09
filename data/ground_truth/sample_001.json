@@ -1,0 +1,25 @@
+{
+  "invoice_number": "INV-1001",
+  "invoice_date": "2024-01-15",
+  "vendor_name": "Harrison & Cole LLP",
+  "client_name": "Acme Corp",
+  "matter_number": "M-2024-0042",
+  "line_items": [
+    {
+      "description": "Legal research re: contract dispute",
+      "hours": 3.5,
+      "rate": 250.0,
+      "amount": 875.0
+    },
+    {
+      "description": "Draft settlement letter",
+      "hours": 1.0,
+      "rate": 250.0,
+      "amount": 250.0
+    }
+  ],
+  "subtotal": 1125.0,
+  "tax": 0.0,
+  "total": 1125.0,
+  "currency": "USD"
+}

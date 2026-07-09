@@ -1,0 +1,154 @@
+:root {
+  color-scheme: light dark;
+  --border: #d0d0d0;
+  --bg-subtle: #f6f6f6;
+  --accent: #2b6cb0;
+  --danger: #b00020;
+  --ok: #1a7f37;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  line-height: 1.4;
+}
+
+header {
+  margin-bottom: 1.5rem;
+}
+
+.subtitle {
+  color: #666;
+  margin-top: 0;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.field-group {
+  margin-bottom: 1.25rem;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.checkbox-row {
+  display: block;
+  margin: 0.25rem 0;
+}
+
+.text-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.4rem 0;
+}
+
+.text-row input[type="text"] {
+  flex: 1;
+  font-family: monospace;
+}
+
+textarea#prompt {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: #777;
+  font-size: 0.85rem;
+}
+
+button#start-run-btn {
+  font-size: 1rem;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+}
+
+#progress-bar-track {
+  background: var(--bg-subtle);
+  border-radius: 6px;
+  height: 1rem;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+#progress-bar-fill {
+  background: var(--accent);
+  height: 100%;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+table.live-table, table.summary-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+table.live-table th, table.live-table td,
+table.summary-table th, table.summary-table td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+td.cell-clickable {
+  cursor: pointer;
+}
+
+td.status-success { color: var(--ok); }
+td.status-error { color: var(--danger); }
+td.status-running, td.status-pending { color: #999; }
+
+#detail-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#detail-modal-content {
+  background: white;
+  color: black;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow: auto;
+  padding: 1.5rem;
+  border-radius: 8px;
+  position: relative;
+}
+
+#detail-modal-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.85rem;
+}
+
+#detail-modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
