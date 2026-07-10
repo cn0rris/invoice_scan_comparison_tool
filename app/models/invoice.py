@@ -5,6 +5,13 @@ from pydantic import BaseModel, Field
 
 class LineItem(BaseModel):
     description: str = Field(description="Description of the billed work or item")
+    timekeeper: Optional[str] = Field(
+        None,
+        description=(
+            "Name or initials of the person who performed this line item's work — "
+            "may be labeled 'Timekeeper', 'Billed by', 'Attorney', 'Initials', etc."
+        ),
+    )
     hours: Optional[float] = Field(None, description="Hours billed, if time-based")
     rate: Optional[float] = Field(None, description="Hourly or unit rate")
     amount: Optional[float] = Field(None, description="Line item total amount")
@@ -33,6 +40,8 @@ def generate_default_prompt() -> str:
         if name == "line_items":
             lines.append(
                 '- line_items: array of objects, each with "description" (string), '
+                '"timekeeper" (string or null — the person who performed this work; '
+                'look for labels like "Timekeeper", "Billed by", "Attorney", or "Initials"), '
                 '"hours" (number or null), "rate" (number or null), "amount" (number or null)'
             )
             continue

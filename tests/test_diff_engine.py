@@ -9,8 +9,8 @@ BASE = {
     "client_name": "Acme Corp",
     "matter_number": "M-1",
     "line_items": [
-        {"description": "Legal research", "hours": 3.5, "rate": 250.0, "amount": 875.0},
-        {"description": "Draft letter", "hours": 1.0, "rate": 250.0, "amount": 250.0},
+        {"description": "Legal research", "timekeeper": "AB", "hours": 3.5, "rate": 250.0, "amount": 875.0},
+        {"description": "Draft letter", "timekeeper": "CD", "hours": 1.0, "rate": 250.0, "amount": 250.0},
     ],
     "subtotal": 1125.0,
     "tax": 0.0,
@@ -116,7 +116,7 @@ def test_extra_line_item():
 def test_matched_line_item_field_mismatch():
     actual = dict(BASE)
     actual["line_items"] = [
-        {"description": "Legal research", "hours": 3.5, "rate": 250.0, "amount": 800.0},  # amount wrong
+        {"description": "Legal research", "timekeeper": "AB", "hours": 3.5, "rate": 250.0, "amount": 800.0},  # amount wrong
         BASE["line_items"][1],
     ]
     result = diff_invoice(expected(), actual)
@@ -125,6 +125,40 @@ def test_matched_line_item_field_mismatch():
     m = next(m for m in result.mismatches if m.field_path == "line_items[0].amount")
     assert m.mismatch_type == MismatchType.NUMERIC_OFF
     assert m.field_path == "line_items[0].amount"
+
+
+def test_line_item_timekeeper_wrong_value():
+    actual = dict(BASE)
+    actual["line_items"] = [
+        {**BASE["line_items"][0], "timekeeper": "XY"},  # wrong timekeeper
+        BASE["line_items"][1],
+    ]
+    result = diff_invoice(expected(), actual)
+    m = next(m for m in result.mismatches if m.field_path == "line_items[0].timekeeper")
+    assert m.mismatch_type == MismatchType.WRONG_VALUE
+    assert m.expected == "AB"
+    assert m.actual == "XY"
+
+
+def test_line_item_timekeeper_missing_is_flagged():
+    actual = dict(BASE)
+    actual["line_items"] = [
+        {k: v for k, v in BASE["line_items"][0].items() if k != "timekeeper"},  # model omitted it
+        BASE["line_items"][1],
+    ]
+    result = diff_invoice(expected(), actual)
+    m = next(m for m in result.mismatches if m.field_path == "line_items[0].timekeeper")
+    assert m.mismatch_type == MismatchType.MISSING_FIELD
+
+
+def test_line_item_timekeeper_both_absent_is_ok():
+    exp = InvoiceExtraction.model_validate(
+        {**BASE, "line_items": [{k: v for k, v in li.items() if k != "timekeeper"} for li in BASE["line_items"]]}
+    )
+    actual = {**BASE, "line_items": [{k: v for k, v in li.items() if k != "timekeeper"} for li in BASE["line_items"]]}
+    result = diff_invoice(exp, actual)
+    types = [m.mismatch_type for m in result.mismatches]
+    assert not any(m.field_path.endswith(".timekeeper") for m in result.mismatches)
 
 
 def test_parse_failure_none_actual():

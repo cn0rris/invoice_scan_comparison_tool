@@ -189,6 +189,9 @@ def _diff_line_items(
         m = _string_mismatch(f"{prefix}.description", exp.description, act.get("description"), 0.85)
         if m:
             mismatches.append(m)
+        m = _string_mismatch(f"{prefix}.timekeeper", exp.timekeeper, act.get("timekeeper"), 0.85)
+        if m:
+            mismatches.append(m)
         for numeric_field in ("hours", "rate", "amount"):
             m = _numeric_mismatch(
                 f"{prefix}.{numeric_field}",
