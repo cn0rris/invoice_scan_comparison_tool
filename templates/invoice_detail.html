@@ -32,10 +32,25 @@
       <h3>Ground Truth</h3>
 
       {% if ground_truth_status in ("valid", "invalid") %}
+      <div id="ground-truth-view-section">
         {% if ground_truth_status == "invalid" %}
         <p class="status-error">⚠ This ground truth file failed schema validation.</p>
         {% endif %}
         <pre id="ground-truth-content" class="json-view">Loading…</pre>
+        <div class="candidate-controls">
+          <button type="button" id="edit-ground-truth-btn" class="btn btn-secondary">Edit</button>
+        </div>
+      </div>
+
+      <div id="ground-truth-editor-section" hidden>
+        <textarea id="ground-truth-editor" class="candidate-editor" spellcheck="false"></textarea>
+        <div class="candidate-controls">
+          <button type="button" id="save-ground-truth-btn" class="btn btn-primary">Save</button>
+          <button type="button" id="cancel-edit-ground-truth-btn" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+
+      <div id="ground-truth-edit-status"></div>
       {% else %}
 
       <div id="generate-section" {% if ground_truth_status == "candidate" %}hidden{% endif %}>

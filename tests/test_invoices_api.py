@@ -254,13 +254,13 @@ async def test_generate_candidate_502_on_extraction_failure(candidate_env, monke
 
 async def test_save_candidate_accepts_json_and_rejects_syntax_errors(candidate_env):
     await invoices_api.save_candidate(
-        "new_invoice.pdf", invoices_api.CandidateContentRequest(content='{"invoice_number": "edited"}')
+        "new_invoice.pdf", invoices_api.ContentRequest(content='{"invoice_number": "edited"}')
     )
     assert json.loads((candidate_env["cand_dir"] / "new_invoice.json").read_text())["invoice_number"] == "edited"
 
     with pytest.raises(HTTPException) as exc_info:
         await invoices_api.save_candidate(
-            "new_invoice.pdf", invoices_api.CandidateContentRequest(content="{not json")
+            "new_invoice.pdf", invoices_api.ContentRequest(content="{not json")
         )
     assert exc_info.value.status_code == 422
 
@@ -272,7 +272,7 @@ async def test_approve_candidate_promotes_to_ground_truth(candidate_env):
 
     result = await invoices_api.approve_candidate(
         "new_invoice.pdf",
-        invoices_api.CandidateContentRequest(content=json.dumps({"invoice_number": "INV-9", "total": 100.0})),
+        invoices_api.ContentRequest(content=json.dumps({"invoice_number": "INV-9", "total": 100.0})),
     )
 
     assert result["approved"] is True
@@ -287,7 +287,7 @@ async def test_approve_candidate_422_on_schema_violation(candidate_env):
     with pytest.raises(HTTPException) as exc_info:
         await invoices_api.approve_candidate(
             "new_invoice.pdf",
-            invoices_api.CandidateContentRequest(content=json.dumps({"total": "not-a-number"})),
+            invoices_api.ContentRequest(content=json.dumps({"total": "not-a-number"})),
         )
     assert exc_info.value.status_code == 422
     assert not (candidate_env["gt_dir"] / "new_invoice.json").exists()
@@ -313,6 +313,53 @@ async def test_get_candidate_returns_content_and_meta(candidate_env):
     result = await invoices_api.get_candidate("new_invoice.pdf")
     assert json.loads(result["content"])["invoice_number"] == "INV-9"
     assert result["meta"]["model_id"] == "m"
+
+
+async def test_edit_ground_truth_overwrites_approved_file(candidate_env):
+    (candidate_env["gt_dir"] / "new_invoice.json").write_text(json.dumps({"invoice_number": "INV-1"}))
+
+    result = await invoices_api.edit_ground_truth(
+        "new_invoice.pdf",
+        invoices_api.ContentRequest(content=json.dumps({"invoice_number": "INV-1-CORRECTED", "total": 50.0})),
+    )
+
+    assert result["saved"] is True
+    gt = json.loads((candidate_env["gt_dir"] / "new_invoice.json").read_text())
+    assert gt["invoice_number"] == "INV-1-CORRECTED"
+    assert gt["total"] == 50.0
+
+
+async def test_edit_ground_truth_repairs_invalid_file(candidate_env):
+    (candidate_env["gt_dir"] / "new_invoice.json").write_text("not valid json at all")
+
+    result = await invoices_api.edit_ground_truth(
+        "new_invoice.pdf", invoices_api.ContentRequest(content=json.dumps({"invoice_number": "FIXED"}))
+    )
+
+    assert result["saved"] is True
+    gt = json.loads((candidate_env["gt_dir"] / "new_invoice.json").read_text())
+    assert gt["invoice_number"] == "FIXED"
+
+
+async def test_edit_ground_truth_422_on_schema_violation(candidate_env):
+    (candidate_env["gt_dir"] / "new_invoice.json").write_text(json.dumps({"invoice_number": "INV-1"}))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.edit_ground_truth(
+            "new_invoice.pdf", invoices_api.ContentRequest(content=json.dumps({"total": "not-a-number"}))
+        )
+    assert exc_info.value.status_code == 422
+    # original file must be untouched on a rejected edit
+    gt = json.loads((candidate_env["gt_dir"] / "new_invoice.json").read_text())
+    assert gt["invoice_number"] == "INV-1"
+
+
+async def test_edit_ground_truth_404_for_unknown_invoice(candidate_env):
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.edit_ground_truth(
+            "../evil.pdf", invoices_api.ContentRequest(content=json.dumps({"invoice_number": "x"}))
+        )
+    assert exc_info.value.status_code == 404
 
 
 async def test_delete_invoice_removes_file_and_ground_truth(candidate_env):

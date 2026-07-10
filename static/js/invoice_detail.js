@@ -233,9 +233,71 @@
     document.getElementById("discard-candidate-btn").addEventListener("click", discardCandidate);
   }
 
+  // --- Direct editing of already-approved (or invalid) ground truth ---
+
+  function initGroundTruthEditor() {
+    const editBtn = document.getElementById("edit-ground-truth-btn");
+    if (!editBtn) return; // no approved/invalid ground truth on this page (missing/candidate state)
+
+    const viewSection = document.getElementById("ground-truth-view-section");
+    const editorSection = document.getElementById("ground-truth-editor-section");
+    const textarea = document.getElementById("ground-truth-editor");
+    const saveBtn = document.getElementById("save-ground-truth-btn");
+    const statusEl = document.getElementById("ground-truth-edit-status");
+
+    function setStatus(message, cls) {
+      statusEl.innerHTML = message ? `<p class="${cls}">${message}</p>` : "";
+    }
+
+    editBtn.addEventListener("click", async () => {
+      try {
+        const resp = await fetch(`/api/ground-truth/${window.GROUND_TRUTH_FILENAME_URL}`);
+        const text = await resp.text();
+        try {
+          textarea.value = JSON.stringify(JSON.parse(text), null, 2);
+        } catch (e) {
+          textarea.value = text; // invalid JSON syntax — edit it raw as-is
+        }
+        viewSection.hidden = true;
+        editorSection.hidden = false;
+        setStatus("", "");
+      } catch (e) {
+        setStatus(`Failed to load ground truth for editing: ${e}`, "status-error");
+      }
+    });
+
+    document.getElementById("cancel-edit-ground-truth-btn").addEventListener("click", () => {
+      editorSection.hidden = true;
+      viewSection.hidden = false;
+      setStatus("", "");
+    });
+
+    saveBtn.addEventListener("click", async () => {
+      saveBtn.disabled = true;
+      try {
+        const resp = await fetch(`/api/invoices/${window.INVOICE_FILENAME_URL}/ground-truth`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: textarea.value }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          setStatus(`Save failed: ${data.detail || resp.status}`, "status-error");
+          return;
+        }
+        window.location.reload(); // re-render read-only view; also clears "invalid" warning if fixed
+      } catch (e) {
+        setStatus(`Save failed: ${e}`, "status-error");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     loadGroundTruth();
     initSplitDrag();
     initCandidateWorkflow();
+    initGroundTruthEditor();
   });
 })();

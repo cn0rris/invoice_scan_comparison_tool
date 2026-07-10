@@ -31,7 +31,7 @@ class GenerateCandidateRequest(BaseModel):
     model_id: str
 
 
-class CandidateContentRequest(BaseModel):
+class ContentRequest(BaseModel):
     content: str
 
 
@@ -57,6 +57,24 @@ def _load_candidate_meta(meta_file: Path) -> dict | None:
         return json.loads(meta_file.read_text())
     except Exception:  # noqa: BLE001 - a corrupt meta sidecar shouldn't block viewing the candidate itself
         return None
+
+
+def _write_ground_truth(invoice_path: Path, content: str) -> Path:
+    """Validates content against the extraction schema and writes it (normalized)
+    as the approved ground truth file for an invoice. Shared by candidate approval
+    and direct ground-truth editing — both promote reviewed JSON the same way."""
+    try:
+        extraction = InvoiceExtraction.model_validate_json(content)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Ground truth failed schema validation: {e}")
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=f"Ground truth is not valid JSON: {e}")
+
+    ground_truth_dir = Path(settings.ground_truth_dir).resolve()
+    ground_truth_dir.mkdir(parents=True, exist_ok=True)
+    gt_file = ground_truth_dir / f"{invoice_path.stem}.json"
+    gt_file.write_text(extraction.model_dump_json(indent=2))
+    return gt_file
 
 
 @router.get("/api/invoices")
@@ -177,7 +195,7 @@ async def generate_candidate(filename: str, body: GenerateCandidateRequest):
 
 
 @router.put("/api/invoices/{filename}/candidate")
-async def save_candidate(filename: str, body: CandidateContentRequest):
+async def save_candidate(filename: str, body: ContentRequest):
     """Saves an edited draft. Only JSON syntax is required here — full schema
     validation is deferred to approval so partial edits can be saved freely."""
     invoice_path = _resolve_invoice(filename)
@@ -193,21 +211,11 @@ async def save_candidate(filename: str, body: CandidateContentRequest):
 
 
 @router.post("/api/invoices/{filename}/candidate/approve")
-async def approve_candidate(filename: str, body: CandidateContentRequest):
+async def approve_candidate(filename: str, body: ContentRequest):
     """Validates the reviewed draft against the extraction schema and promotes it to
     approved ground truth (normalized formatting). The candidate draft is removed."""
     invoice_path = _resolve_invoice(filename)
-    try:
-        extraction = InvoiceExtraction.model_validate_json(body.content)
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Draft failed schema validation: {e}")
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=f"Draft is not valid JSON: {e}")
-
-    ground_truth_dir = Path(settings.ground_truth_dir).resolve()
-    ground_truth_dir.mkdir(parents=True, exist_ok=True)
-    gt_file = ground_truth_dir / f"{invoice_path.stem}.json"
-    gt_file.write_text(extraction.model_dump_json(indent=2))
+    gt_file = _write_ground_truth(invoice_path, body.content)
 
     cand_file, meta_file = _candidate_paths(invoice_path)
     cand_file.unlink(missing_ok=True)
@@ -224,3 +232,13 @@ async def discard_candidate(filename: str):
     cand_file.unlink()
     meta_file.unlink(missing_ok=True)
     return {"discarded": True}
+
+
+@router.put("/api/invoices/{filename}/ground-truth")
+async def edit_ground_truth(filename: str, body: ContentRequest):
+    """Directly edits the approved ground truth file for an invoice — e.g. fixing a
+    mistake after approval, or repairing a file that's in the 'invalid' state
+    (failed schema validation). Validates the same way candidate approval does."""
+    invoice_path = _resolve_invoice(filename)
+    gt_file = _write_ground_truth(invoice_path, body.content)
+    return {"saved": True, "ground_truth_filename": gt_file.name}
