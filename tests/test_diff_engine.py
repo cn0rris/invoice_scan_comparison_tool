@@ -69,9 +69,10 @@ def test_numeric_within_tolerance_is_ok():
 def test_numeric_off():
     actual = {**BASE, "total": 1100.0}
     result = diff_invoice(expected(), actual)
-    assert result.mistake_count == 1
-    m = result.mismatches[0]
-    assert m.mismatch_type == MismatchType.NUMERIC_OFF
+    # Changing only "total" also makes subtotal+tax no longer equal the new total —
+    # a second, legitimate finding from the new arithmetic cross-check.
+    assert result.mistake_count == 2
+    m = next(m for m in result.mismatches if m.mismatch_type == MismatchType.NUMERIC_OFF)
     assert "25.00" in m.message
 
 
@@ -92,8 +93,12 @@ def test_missing_line_item():
     actual = dict(BASE)
     actual["line_items"] = [BASE["line_items"][0]]  # drop the second line item
     result = diff_invoice(expected(), actual)
-    assert result.mistake_count == 1
-    assert result.mismatches[0].mismatch_type == MismatchType.MISSING_LINE_ITEM
+    types = [m.mismatch_type for m in result.mismatches]
+    assert MismatchType.MISSING_LINE_ITEM in types
+    # The remaining line item no longer sums to the (unchanged) subtotal — a second,
+    # legitimate finding from the new arithmetic cross-check.
+    assert MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH in types
+    assert result.mistake_count == 2
 
 
 def test_extra_line_item():
@@ -102,8 +107,10 @@ def test_extra_line_item():
         {"description": "Hallucinated extra work", "hours": 2.0, "rate": 100.0, "amount": 200.0}
     ]
     result = diff_invoice(expected(), actual)
-    assert result.mistake_count == 1
-    assert result.mismatches[0].mismatch_type == MismatchType.EXTRA_LINE_ITEM
+    types = [m.mismatch_type for m in result.mismatches]
+    assert MismatchType.EXTRA_LINE_ITEM in types
+    assert MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH in types
+    assert result.mistake_count == 2
 
 
 def test_matched_line_item_field_mismatch():
@@ -113,8 +120,9 @@ def test_matched_line_item_field_mismatch():
         BASE["line_items"][1],
     ]
     result = diff_invoice(expected(), actual)
-    assert result.mistake_count == 1
-    m = result.mismatches[0]
+    types = [m.mismatch_type for m in result.mismatches]
+    assert MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH in types
+    m = next(m for m in result.mismatches if m.field_path == "line_items[0].amount")
     assert m.mismatch_type == MismatchType.NUMERIC_OFF
     assert m.field_path == "line_items[0].amount"
 
@@ -124,3 +132,47 @@ def test_parse_failure_none_actual():
     assert result.mismatches[0].mismatch_type == MismatchType.PARSE_FAILURE
     # penalty = 1 + populated top-level fields (6: number, date, vendor, client, matter, subtotal, tax, total -> check count) + line items
     assert result.mistake_count > 1
+
+
+def test_arithmetic_line_items_subtotal_mismatch():
+    actual = dict(BASE)
+    actual["subtotal"] = 1200.0  # line items still sum to 1125.0
+    actual["total"] = 1200.0  # keep subtotal+tax==total consistent so only one mismatch fires
+    result = diff_invoice(expected(), actual)
+    types = [m.mismatch_type for m in result.mismatches]
+    assert MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH in types
+    m = next(m for m in result.mismatches if m.mismatch_type == MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH)
+    assert "75.00" in m.message
+
+
+def test_arithmetic_subtotal_tax_total_mismatch():
+    actual = dict(BASE)
+    actual["tax"] = 100.0
+    # total stays 1125.0, but subtotal (1125) + tax (100) = 1225 != total
+    result = diff_invoice(expected(), actual)
+    types = [m.mismatch_type for m in result.mismatches]
+    assert MismatchType.SUBTOTAL_TAX_TOTAL_MISMATCH in types
+    m = next(m for m in result.mismatches if m.mismatch_type == MismatchType.SUBTOTAL_TAX_TOTAL_MISMATCH)
+    assert "100.00" in m.message
+
+
+def test_arithmetic_skipped_when_subtotal_and_tax_absent():
+    # Some invoices only print a total, with no subtotal/tax breakdown at all —
+    # that's not an arithmetic error, just nothing to cross-check.
+    actual = {**BASE, "subtotal": None, "tax": None}
+    exp = InvoiceExtraction.model_validate({**BASE, "subtotal": None, "tax": None})
+    result = diff_invoice(exp, actual)
+    types = [m.mismatch_type for m in result.mismatches]
+    assert MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH not in types
+    assert MismatchType.SUBTOTAL_TAX_TOTAL_MISMATCH not in types
+
+
+def test_arithmetic_skipped_when_a_line_item_amount_is_missing():
+    actual = dict(BASE)
+    actual["line_items"] = [
+        {"description": "Legal research", "hours": 3.5, "rate": 250.0, "amount": None},
+        BASE["line_items"][1],
+    ]
+    result = diff_invoice(expected(), actual)
+    types = [m.mismatch_type for m in result.mismatches]
+    assert MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH not in types

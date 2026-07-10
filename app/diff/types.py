@@ -14,6 +14,8 @@ class MismatchType(str, Enum):
     MISSING_LINE_ITEM = "missing_line_item"
     EXTRA_LINE_ITEM = "extra_line_item"
     PARSE_FAILURE = "parse_failure"
+    LINE_ITEMS_SUBTOTAL_MISMATCH = "line_items_subtotal_mismatch"
+    SUBTOTAL_TAX_TOTAL_MISMATCH = "subtotal_tax_total_mismatch"
 
 
 class Mismatch(BaseModel):

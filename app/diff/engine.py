@@ -217,6 +217,68 @@ def _diff_line_items(
     return mismatches
 
 
+def _to_float(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _check_arithmetic(actual: dict[str, Any], abs_tolerance: float) -> list[Mismatch]:
+    """Cross-checks internal arithmetic consistency of the model's own extracted
+    values — independent of ground truth. Only runs where the necessary fields are
+    all present: many invoices only print a total with no subtotal/tax breakdown,
+    and that's not an error under this check, just nothing to verify."""
+    mismatches: list[Mismatch] = []
+    line_items = actual.get("line_items")
+    if not isinstance(line_items, list):
+        line_items = []
+
+    subtotal = _to_float(actual.get("subtotal"))
+    tax = _to_float(actual.get("tax"))
+    total = _to_float(actual.get("total"))
+
+    if subtotal is not None and line_items:
+        amounts = [_to_float(li.get("amount")) if isinstance(li, dict) else None for li in line_items]
+        if all(a is not None for a in amounts):
+            line_items_sum = sum(amounts)
+            if not is_numeric_close(line_items_sum, subtotal, abs_tolerance=abs_tolerance):
+                delta = abs(line_items_sum - subtotal)
+                mismatches.append(
+                    Mismatch(
+                        field_path="subtotal",
+                        mismatch_type=MismatchType.LINE_ITEMS_SUBTOTAL_MISMATCH,
+                        expected=None,
+                        actual=subtotal,
+                        message=(
+                            f"Arithmetic inconsistency: line items sum to {line_items_sum:.2f} "
+                            f"but subtotal is {subtotal:.2f} (off by {delta:.2f})."
+                        ),
+                    )
+                )
+
+    if subtotal is not None and tax is not None and total is not None:
+        computed_total = subtotal + tax
+        if not is_numeric_close(computed_total, total, abs_tolerance=abs_tolerance):
+            delta = abs(computed_total - total)
+            mismatches.append(
+                Mismatch(
+                    field_path="total",
+                    mismatch_type=MismatchType.SUBTOTAL_TAX_TOTAL_MISMATCH,
+                    expected=None,
+                    actual=total,
+                    message=(
+                        f"Arithmetic inconsistency: subtotal ({subtotal:.2f}) + tax ({tax:.2f}) "
+                        f"= {computed_total:.2f}, but total is {total:.2f} (off by {delta:.2f})."
+                    ),
+                )
+            )
+
+    return mismatches
+
+
 def diff_invoice(
     expected: InvoiceExtraction,
     actual: Optional[dict[str, Any]],
@@ -258,5 +320,7 @@ def diff_invoice(
     if not isinstance(actual_line_items, list):
         actual_line_items = []
     mismatches.extend(_diff_line_items(expected.line_items, actual_line_items, numeric_abs_tolerance))
+
+    mismatches.extend(_check_arithmetic(actual, numeric_abs_tolerance))
 
     return DiffResult(mismatches=mismatches, mistake_count=len(mismatches))
