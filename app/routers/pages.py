@@ -49,6 +49,7 @@ async def invoice_detail_page(request: Request, filename: str):
         "invoice_detail.html",
         {
             "active_page": "invoices",
+            "wide_page": True,
             "filename": safe_name,
             "filename_url": quote(safe_name),
             "is_pdf": file_path.suffix.lower() == ".pdf",

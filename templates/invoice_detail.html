@@ -5,8 +5,8 @@
 
 <section class="panel">
   <h2>{{ filename }}</h2>
-  <div class="detail-split">
-    <div class="detail-pane">
+  <div class="detail-split" id="detail-split">
+    <div class="detail-pane" id="invoice-pane">
       <h3>Invoice</h3>
       {% if is_pdf %}
       <iframe src="/api/invoices/{{ filename_url }}#view=FitH" class="invoice-frame" title="{{ filename }}"></iframe>
@@ -14,7 +14,8 @@
       <img src="/api/invoices/{{ filename_url }}" class="invoice-image" alt="{{ filename }}" />
       {% endif %}
     </div>
-    <div class="detail-pane">
+    <div class="split-divider" id="split-divider" role="separator" aria-orientation="vertical" aria-label="Resize invoice and ground truth panes" tabindex="0" title="Drag to resize (double-click to reset)"></div>
+    <div class="detail-pane" id="ground-truth-pane">
       <h3>Ground Truth</h3>
       {% if ground_truth_status == "missing" %}
       <p class="muted">No ground truth file found. Expected at <code>{{ ground_truth_filename }}</code>.</p>

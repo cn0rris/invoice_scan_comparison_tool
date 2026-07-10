@@ -29,7 +29,7 @@
       </div>
     </header>
     <main>
-      <div class="main-inner">
+      <div class="main-inner{% if wide_page %} main-inner-wide{% endif %}">
         {% block content %}{% endblock %}
       </div>
     </main>

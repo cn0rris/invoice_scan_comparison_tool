@@ -131,6 +131,10 @@ main {
   padding: 1.75rem 1.5rem 2rem;
 }
 
+.main-inner-wide {
+  max-width: 1600px;
+}
+
 footer {
   border-top: 1px solid var(--border);
   color: var(--muted);
@@ -240,14 +244,54 @@ footer {
 }
 
 .detail-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  align-items: start;
+  display: flex;
+  align-items: stretch;
+}
+
+.detail-pane {
+  min-width: 0; /* lets flex children (image/iframe) shrink below their content size */
 }
 
 .detail-pane h3 {
   margin-top: 0;
+}
+
+#invoice-pane {
+  flex: 0 0 60%;
+}
+
+#ground-truth-pane {
+  flex: 1 1 0;
+}
+
+.split-divider {
+  flex: 0 0 10px;
+  margin: 0 0.75rem;
+  align-self: stretch;
+  background: var(--border);
+  border-radius: 4px;
+  cursor: col-resize;
+  transition: background var(--trans);
+}
+
+.split-divider:hover,
+.split-divider.dragging {
+  background: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .detail-split {
+    flex-direction: column;
+  }
+
+  .split-divider {
+    display: none;
+  }
+
+  #invoice-pane,
+  #ground-truth-pane {
+    flex: 1 1 auto;
+  }
 }
 
 .invoice-frame {
@@ -278,12 +322,6 @@ footer {
   max-height: 75vh;
   overflow: auto;
   margin: 0;
-}
-
-@media (max-width: 900px) {
-  .detail-split {
-    grid-template-columns: 1fr;
-  }
 }
 
 .field-group {
