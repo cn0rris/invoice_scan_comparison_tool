@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<p><a href="/invoices" class="file-link">&larr; Back to Invoices</a></p>
+
+<section class="panel">
+  <h2>{{ filename }}</h2>
+  <div class="detail-split">
+    <div class="detail-pane">
+      <h3>Invoice</h3>
+      {% if is_pdf %}
+      <iframe src="/api/invoices/{{ filename_url }}" class="invoice-frame" title="{{ filename }}"></iframe>
+      {% else %}
+      <img src="/api/invoices/{{ filename_url }}" class="invoice-image" alt="{{ filename }}" />
+      {% endif %}
+    </div>
+    <div class="detail-pane">
+      <h3>Ground Truth</h3>
+      {% if ground_truth_status == "missing" %}
+      <p class="muted">No ground truth file found. Expected at <code>{{ ground_truth_filename }}</code>.</p>
+      {% else %}
+        {% if ground_truth_status == "invalid" %}
+        <p class="status-error">⚠ This ground truth file failed schema validation.</p>
+        {% endif %}
+        <pre id="ground-truth-content" class="json-view">Loading…</pre>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<script>window.GROUND_TRUTH_FILENAME_URL = {{ ground_truth_filename_url | tojson }};</script>
+<script src="/static/js/invoice_detail.js"></script>
+{% endblock %}
