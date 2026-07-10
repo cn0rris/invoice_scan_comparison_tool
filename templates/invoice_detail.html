@@ -9,7 +9,7 @@
     <div class="detail-pane">
       <h3>Invoice</h3>
       {% if is_pdf %}
-      <iframe src="/api/invoices/{{ filename_url }}" class="invoice-frame" title="{{ filename }}"></iframe>
+      <iframe src="/api/invoices/{{ filename_url }}#view=FitH" class="invoice-frame" title="{{ filename }}"></iframe>
       {% else %}
       <img src="/api/invoices/{{ filename_url }}" class="invoice-image" alt="{{ filename }}" />
       {% endif %}
