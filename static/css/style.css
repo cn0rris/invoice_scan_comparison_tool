@@ -430,9 +430,9 @@ td.cell-clickable:hover, tr.cell-clickable:hover td {
   background: var(--bg);
 }
 
-td.status-success, td.status-completed { color: var(--ok); }
-td.status-error, td.status-failed { color: var(--danger); }
-td.status-running, td.status-pending { color: var(--muted); }
+.status-success, .status-completed, td.status-success, td.status-completed { color: var(--ok); }
+.status-error, .status-failed, td.status-error, td.status-failed { color: var(--danger); }
+.status-running, .status-pending, td.status-running, td.status-pending { color: var(--muted); }
 
 #detail-modal {
   position: fixed;

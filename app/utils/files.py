@@ -46,6 +46,7 @@ def describe_invoices(invoice_dir: Path, ground_truth_dir: Path) -> list[dict]:
                 "size_bytes": stat.st_size,
                 "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
                 "ground_truth_status": ground_truth_status(path, ground_truth_dir),
+                "ground_truth_filename": f"{path.stem}.json",
             }
         )
     return invoices

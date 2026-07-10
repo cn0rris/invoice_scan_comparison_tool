@@ -34,6 +34,7 @@ async def test_get_invoices_reports_ground_truth_status(tmp_path: Path, monkeypa
     assert result["has_valid_gt.pdf"]["ground_truth_status"] == "valid"
     assert result["has_invalid_gt.pdf"]["ground_truth_status"] == "invalid"
     assert result["no_gt.pdf"]["ground_truth_status"] == "missing"
+    assert result["has_valid_gt.pdf"]["ground_truth_filename"] == "has_valid_gt.json"
 
 
 async def test_upload_saves_valid_files(tmp_path: Path, monkeypatch):
@@ -125,4 +126,49 @@ async def test_get_invoice_file_rejects_disallowed_extension(tmp_path: Path, mon
 
     with pytest.raises(HTTPException) as exc_info:
         await invoices_api.get_invoice_file("notes.txt")
+    assert exc_info.value.status_code == 404
+
+
+async def test_get_ground_truth_file_returns_the_file(tmp_path: Path, monkeypatch):
+    gt_dir = tmp_path / "ground_truth"
+    gt_dir.mkdir()
+    monkeypatch.setattr(settings, "ground_truth_dir", str(gt_dir))
+    (gt_dir / "sample.json").write_text(json.dumps({"invoice_number": "INV-1"}))
+
+    response = await invoices_api.get_ground_truth_file("sample.json")
+
+    assert response.path == gt_dir / "sample.json"
+    assert response.media_type == "application/json"
+    assert response.headers["content-disposition"] == 'inline; filename="sample.json"'
+
+
+async def test_get_ground_truth_file_404_when_missing(tmp_path: Path, monkeypatch):
+    gt_dir = tmp_path / "ground_truth"
+    gt_dir.mkdir()
+    monkeypatch.setattr(settings, "ground_truth_dir", str(gt_dir))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.get_ground_truth_file("does_not_exist.json")
+    assert exc_info.value.status_code == 404
+
+
+async def test_get_ground_truth_file_rejects_path_traversal(tmp_path: Path, monkeypatch):
+    gt_dir = tmp_path / "ground_truth"
+    gt_dir.mkdir()
+    monkeypatch.setattr(settings, "ground_truth_dir", str(gt_dir))
+    (tmp_path / "secret.json").write_text("do not serve me")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.get_ground_truth_file("../secret.json")
+    assert exc_info.value.status_code == 404
+
+
+async def test_get_ground_truth_file_rejects_non_json(tmp_path: Path, monkeypatch):
+    gt_dir = tmp_path / "ground_truth"
+    gt_dir.mkdir()
+    monkeypatch.setattr(settings, "ground_truth_dir", str(gt_dir))
+    (gt_dir / "sample.txt").write_text("not json")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.get_ground_truth_file("sample.txt")
     assert exc_info.value.status_code == 404

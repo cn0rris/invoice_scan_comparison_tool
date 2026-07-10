@@ -38,6 +38,20 @@ async def get_invoice_file(filename: str):
     )
 
 
+@router.get("/api/ground-truth/{filename}")
+async def get_ground_truth_file(filename: str):
+    ground_truth_dir = Path(settings.ground_truth_dir).resolve()
+    safe_name = Path(filename).name  # strip any path components; defends against traversal
+    file_path = ground_truth_dir / safe_name
+    if safe_name != filename or file_path.suffix.lower() != ".json" or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Ground truth file not found")
+    return FileResponse(
+        file_path,
+        media_type="application/json",
+        headers={"Content-Disposition": f'inline; filename="{safe_name}"'},
+    )
+
+
 @router.post("/api/invoices")
 async def upload_invoices(files: list[UploadFile]):
     invoice_dir = Path(settings.invoice_dir).resolve()

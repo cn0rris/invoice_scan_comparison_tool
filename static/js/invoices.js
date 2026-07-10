@@ -11,10 +11,14 @@
     return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  function gtBadge(status) {
+  function gtBadge(status, filename) {
     const label = { valid: "✓ ground truth", invalid: "⚠ invalid ground truth", missing: "no ground truth" }[status] || status;
     const cls = { valid: "status-success", invalid: "status-error", missing: "status-pending" }[status] || "";
-    return `<span class="${cls}">${escapeHtml(label)}</span>`;
+    if (status === "missing") {
+      return `<span class="${cls}">${escapeHtml(label)}</span>`;
+    }
+    const url = `/api/ground-truth/${encodeURIComponent(filename)}`;
+    return `<a class="file-link ${cls}" href="${url}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
   }
 
   async function loadInvoices() {
@@ -29,7 +33,7 @@
       let html = '<table class="summary-table"><thead><tr><th>Filename</th><th>Size</th><th>Modified</th><th>Ground Truth</th></tr></thead><tbody>';
       for (const inv of invoices) {
         const url = `/api/invoices/${encodeURIComponent(inv.filename)}`;
-        html += `<tr><td><a class="file-link" href="${url}" target="_blank" rel="noopener">${escapeHtml(inv.filename)}</a></td><td>${formatBytes(inv.size_bytes)}</td><td>${new Date(inv.modified_at).toLocaleString()}</td><td>${gtBadge(inv.ground_truth_status)}</td></tr>`;
+        html += `<tr><td><a class="file-link" href="${url}" target="_blank" rel="noopener">${escapeHtml(inv.filename)}</a></td><td>${formatBytes(inv.size_bytes)}</td><td>${new Date(inv.modified_at).toLocaleString()}</td><td>${gtBadge(inv.ground_truth_status, inv.ground_truth_filename)}</td></tr>`;
       }
       html += "</tbody></table>";
       wrapper.innerHTML = html;
