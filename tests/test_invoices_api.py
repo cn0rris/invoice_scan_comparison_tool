@@ -315,6 +315,39 @@ async def test_get_candidate_returns_content_and_meta(candidate_env):
     assert result["meta"]["model_id"] == "m"
 
 
+async def test_delete_invoice_removes_file_and_ground_truth(candidate_env):
+    (candidate_env["gt_dir"] / "new_invoice.json").write_text(json.dumps({"invoice_number": "INV-1"}))
+
+    result = await invoices_api.delete_invoice("new_invoice.pdf")
+
+    assert result["deleted"] == "new_invoice.pdf"
+    assert not (candidate_env["invoice_dir"] / "new_invoice.pdf").exists()
+    assert not (candidate_env["gt_dir"] / "new_invoice.json").exists()
+
+
+async def test_delete_invoice_removes_candidate_files(candidate_env):
+    candidate_env["cand_dir"].mkdir()
+    (candidate_env["cand_dir"] / "new_invoice.json").write_text("{}")
+    (candidate_env["cand_dir"] / "new_invoice.meta.json").write_text("{}")
+
+    await invoices_api.delete_invoice("new_invoice.pdf")
+
+    assert not (candidate_env["cand_dir"] / "new_invoice.json").exists()
+    assert not (candidate_env["cand_dir"] / "new_invoice.meta.json").exists()
+
+
+async def test_delete_invoice_404_when_missing(candidate_env):
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.delete_invoice("does_not_exist.pdf")
+    assert exc_info.value.status_code == 404
+
+
+async def test_delete_invoice_rejects_path_traversal(candidate_env):
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.delete_invoice("../evil.pdf")
+    assert exc_info.value.status_code == 404
+
+
 async def test_candidate_endpoints_404_for_unknown_invoice(candidate_env):
     with pytest.raises(HTTPException) as exc_info:
         await invoices_api.generate_candidate(

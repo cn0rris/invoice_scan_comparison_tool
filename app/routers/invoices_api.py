@@ -96,6 +96,22 @@ async def get_ground_truth_file(filename: str):
     )
 
 
+@router.delete("/api/invoices/{filename}")
+async def delete_invoice(filename: str):
+    """Deletes the invoice file along with any ground truth (approved or candidate)
+    tied to it — those files are meaningless without the invoice they describe."""
+    invoice_path = _resolve_invoice(filename)
+    ground_truth_dir = Path(settings.ground_truth_dir).resolve()
+    gt_file = ground_truth_dir / f"{invoice_path.stem}.json"
+    cand_file, meta_file = _candidate_paths(invoice_path)
+
+    invoice_path.unlink()
+    gt_file.unlink(missing_ok=True)
+    cand_file.unlink(missing_ok=True)
+    meta_file.unlink(missing_ok=True)
+    return {"deleted": invoice_path.name}
+
+
 @router.post("/api/invoices")
 async def upload_invoices(files: list[UploadFile]):
     invoice_dir = Path(settings.invoice_dir).resolve()

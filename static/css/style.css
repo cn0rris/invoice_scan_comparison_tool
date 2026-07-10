@@ -530,6 +530,11 @@ td.cell-clickable:hover, tr.cell-clickable:hover td {
   border-color: var(--danger);
 }
 
+.btn-small {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.9rem;
+}
+
 .candidate-controls {
   display: flex;
   align-items: center;
