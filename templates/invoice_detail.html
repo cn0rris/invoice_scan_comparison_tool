@@ -7,6 +7,19 @@
   <h2>{{ filename }}</h2>
   <div class="detail-split" id="detail-split">
     <div class="detail-pane" id="invoice-pane">
+      <script>
+        // Must run before the iframe/img below is parsed: the built-in PDF viewer
+        // computes its initial "fit" zoom from the pane's width at load time and
+        // does not reflow if the pane is resized afterward (e.g. by JS running on
+        // DOMContentLoaded, which fires too late — after the iframe has already
+        // started loading). Setting the width synchronously here, before that
+        // element exists, avoids the race entirely.
+        (function () {
+          var saved = parseFloat(localStorage.getItem("invoiceDetailSplitPercent"));
+          var percent = isFinite(saved) ? saved : 60;
+          document.currentScript.parentElement.style.flexBasis = percent + "%";
+        })();
+      </script>
       <h3>Invoice</h3>
       {% if is_pdf %}
       <iframe src="/api/invoices/{{ filename_url }}#view=FitH" class="invoice-frame" title="{{ filename }}"></iframe>

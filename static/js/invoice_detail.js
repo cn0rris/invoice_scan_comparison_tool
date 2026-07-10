@@ -26,12 +26,14 @@
     const divider = document.getElementById("split-divider");
     if (!container || !invoicePane || !divider) return;
 
+    // The initial split percentage is applied synchronously in an inline
+    // <script> in invoice_detail.html, before the iframe/img is parsed — not
+    // here. Re-applying it on DOMContentLoaded would run too late: the PDF
+    // viewer inside the iframe computes its "fit" zoom once, at load time,
+    // and does not reflow when the pane is resized afterward.
     function applyPercent(percent) {
       invoicePane.style.flexBasis = `${percent}%`;
     }
-
-    const saved = parseFloat(localStorage.getItem(SPLIT_STORAGE_KEY));
-    applyPercent(Number.isFinite(saved) ? saved : DEFAULT_PERCENT);
 
     let dragging = false;
 
