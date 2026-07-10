@@ -28,7 +28,8 @@
       }
       let html = '<table class="summary-table"><thead><tr><th>Filename</th><th>Size</th><th>Modified</th><th>Ground Truth</th></tr></thead><tbody>';
       for (const inv of invoices) {
-        html += `<tr><td>${escapeHtml(inv.filename)}</td><td>${formatBytes(inv.size_bytes)}</td><td>${new Date(inv.modified_at).toLocaleString()}</td><td>${gtBadge(inv.ground_truth_status)}</td></tr>`;
+        const url = `/api/invoices/${encodeURIComponent(inv.filename)}`;
+        html += `<tr><td><a class="file-link" href="${url}" target="_blank" rel="noopener">${escapeHtml(inv.filename)}</a></td><td>${formatBytes(inv.size_bytes)}</td><td>${new Date(inv.modified_at).toLocaleString()}</td><td>${gtBadge(inv.ground_truth_status)}</td></tr>`;
       }
       html += "</tbody></table>";
       wrapper.innerHTML = html;

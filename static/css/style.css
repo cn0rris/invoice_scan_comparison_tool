@@ -97,6 +97,17 @@ nav {
   background: rgba(42, 93, 176, 0.08);
 }
 
+.file-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.file-link:hover {
+  color: var(--accent2);
+  text-decoration: underline;
+}
+
 .subtitle {
   color: var(--muted);
   font-size: 0.95rem;
@@ -287,6 +298,7 @@ input[type="text"] {
 
 textarea#prompt {
   font-family: monospace;
+  font-size: 0.8rem;
   resize: vertical;
 }
 

@@ -2,6 +2,8 @@ import json
 from io import BytesIO
 from pathlib import Path
 
+import pytest
+from fastapi import HTTPException
 from starlette.datastructures import UploadFile
 
 from app.config import settings
@@ -78,3 +80,49 @@ async def test_upload_strips_path_components_from_filename(tmp_path: Path, monke
     assert result["saved"] == ["evil.pdf"]
     assert (invoice_dir / "evil.pdf").exists()
     assert not (tmp_path / "etc").exists()
+
+
+async def test_get_invoice_file_returns_the_file(tmp_path: Path, monkeypatch):
+    invoice_dir = tmp_path / "invoices"
+    invoice_dir.mkdir()
+    monkeypatch.setattr(settings, "invoice_dir", str(invoice_dir))
+    (invoice_dir / "sample.pdf").write_bytes(b"%PDF-1.4 content")
+
+    response = await invoices_api.get_invoice_file("sample.pdf")
+
+    assert response.path == invoice_dir / "sample.pdf"
+    assert response.media_type == "application/pdf"
+    assert response.headers["content-disposition"] == 'inline; filename="sample.pdf"'
+
+
+async def test_get_invoice_file_404_when_missing(tmp_path: Path, monkeypatch):
+    invoice_dir = tmp_path / "invoices"
+    invoice_dir.mkdir()
+    monkeypatch.setattr(settings, "invoice_dir", str(invoice_dir))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.get_invoice_file("does_not_exist.pdf")
+    assert exc_info.value.status_code == 404
+
+
+async def test_get_invoice_file_rejects_path_traversal(tmp_path: Path, monkeypatch):
+    invoice_dir = tmp_path / "invoices"
+    invoice_dir.mkdir()
+    monkeypatch.setattr(settings, "invoice_dir", str(invoice_dir))
+    outside_secret = tmp_path / "secret.txt"
+    outside_secret.write_text("do not serve me")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.get_invoice_file("../secret.txt")
+    assert exc_info.value.status_code == 404
+
+
+async def test_get_invoice_file_rejects_disallowed_extension(tmp_path: Path, monkeypatch):
+    invoice_dir = tmp_path / "invoices"
+    invoice_dir.mkdir()
+    monkeypatch.setattr(settings, "invoice_dir", str(invoice_dir))
+    (invoice_dir / "notes.txt").write_text("not an invoice")
+
+    with pytest.raises(HTTPException) as exc_info:
+        await invoices_api.get_invoice_file("notes.txt")
+    assert exc_info.value.status_code == 404
