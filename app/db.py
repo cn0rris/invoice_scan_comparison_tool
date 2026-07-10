@@ -201,22 +201,35 @@ db = Database(settings.db_path)
 def compute_summary(run: dict, results: list[dict]) -> dict[str, Any]:
     """Shared aggregation used by both the orchestrator's run_complete broadcast
     and the GET /api/runs/{id}/summary endpoint, so the two can't drift."""
-    per_model: dict[str, dict[str, int]] = {}
-    matrix: dict[str, dict[str, Optional[int]]] = {}
+    per_model: dict[str, dict[str, Any]] = {}
+    duration_totals: dict[str, list[int]] = {}  # model_id -> [sum_ms, count], for avg_duration_ms below
+    matrix: dict[str, dict[str, Optional[dict]]] = {}
     for r in results:
         model_id = r["model_id"]
         invoice_stem = r["invoice_stem"]
-        per_model.setdefault(model_id, {"total_mistakes": 0, "success": 0, "error": 0})
+        per_model.setdefault(model_id, {"total_mistakes": 0, "success": 0, "error": 0, "avg_duration_ms": None})
+        duration_totals.setdefault(model_id, [0, 0])
         matrix.setdefault(invoice_stem, {})
+        duration_ms = r["duration_ms"]
+        if duration_ms is not None:
+            duration_totals[model_id][0] += duration_ms
+            duration_totals[model_id][1] += 1
         if r["status"] == "success":
             per_model[model_id]["success"] += 1
             per_model[model_id]["total_mistakes"] += r["mistake_count"] or 0
-            matrix[invoice_stem][model_id] = r["mistake_count"]
+            matrix[invoice_stem][model_id] = {"mistake_count": r["mistake_count"], "duration_ms": duration_ms}
         elif r["status"] in ("error", "no_ground_truth"):
             per_model[model_id]["error"] += 1
-            matrix[invoice_stem][model_id] = None
+            # no_ground_truth pairs never ran an extraction (no duration to show) — treat
+            # the cell like the pending/running case below, rather than a dict of nulls.
+            matrix[invoice_stem][model_id] = (
+                {"mistake_count": None, "duration_ms": duration_ms} if r["status"] == "error" else None
+            )
         else:
             matrix[invoice_stem][model_id] = None
+    for model_id, (total_ms, count) in duration_totals.items():
+        if count > 0:
+            per_model[model_id]["avg_duration_ms"] = round(total_ms / count)
     return {
         "run_id": run["id"],
         "status": run["status"],

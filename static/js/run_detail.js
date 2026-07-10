@@ -130,12 +130,17 @@
     document.getElementById("detail-modal").classList.remove("hidden");
   }
 
+  function formatDuration(ms) {
+    if (ms === null || ms === undefined) return "-";
+    return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+  }
+
   function renderSummary(summary) {
     document.getElementById("summary-panel").classList.remove("hidden");
 
-    let perModelHtml = '<table class="summary-table"><thead><tr><th>Model</th><th>Total Mistakes</th><th>Success</th><th>Error</th></tr></thead><tbody>';
+    let perModelHtml = '<table class="summary-table"><thead><tr><th>Model</th><th>Total Mistakes</th><th>Success</th><th>Error</th><th>Avg Elapsed</th></tr></thead><tbody>';
     for (const [model, stats] of Object.entries(summary.per_model)) {
-      perModelHtml += `<tr><td>${escapeHtml(model)}</td><td>${stats.total_mistakes}</td><td>${stats.success}</td><td>${stats.error}</td></tr>`;
+      perModelHtml += `<tr><td>${escapeHtml(model)}</td><td>${stats.total_mistakes}</td><td>${stats.success}</td><td>${stats.error}</td><td>${formatDuration(stats.avg_duration_ms)}</td></tr>`;
     }
     perModelHtml += "</tbody></table>";
     document.getElementById("summary-per-model").innerHTML = perModelHtml;
@@ -148,8 +153,13 @@
     for (const stem of invoiceStems) {
       matrixHtml += `<tr><td>${escapeHtml(stem)}</td>`;
       for (const m of modelIds) {
-        const val = summary.matrix[stem][m];
-        matrixHtml += `<td>${val === null || val === undefined ? "-" : val}</td>`;
+        const cell = summary.matrix[stem][m];
+        if (!cell) {
+          matrixHtml += "<td>-</td>";
+          continue;
+        }
+        const mistakes = cell.mistake_count === null || cell.mistake_count === undefined ? "-" : cell.mistake_count;
+        matrixHtml += `<td>${mistakes} <span class="muted">(${formatDuration(cell.duration_ms)})</span></td>`;
       }
       matrixHtml += "</tr>";
     }
