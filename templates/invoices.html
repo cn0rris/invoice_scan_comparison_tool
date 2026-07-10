@@ -4,8 +4,9 @@
 <section class="panel">
   <h2>Upload Invoices</h2>
   <p class="muted">
-    Uploaded files are stored alongside the existing invoices. Add a matching ground-truth JSON
-    file separately (named after the invoice's filename stem) to make an invoice scoreable.
+    Uploaded files are stored alongside the existing invoices. To make an invoice scoreable,
+    open it and generate a candidate ground truth with a model, then review and approve it —
+    or add a matching ground-truth JSON file (named after the invoice's filename stem) by hand.
   </p>
   <form id="upload-form" class="upload-form">
     <input type="file" id="upload-input" multiple accept=".pdf,.png,.jpg,.jpeg" />

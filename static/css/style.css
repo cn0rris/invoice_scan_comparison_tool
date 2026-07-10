@@ -518,6 +518,57 @@ td.cell-clickable:hover, tr.cell-clickable:hover td {
 .status-success, .status-completed, td.status-success, td.status-completed { color: var(--ok); }
 .status-error, .status-failed, td.status-error, td.status-failed { color: var(--danger); }
 .status-running, .status-pending, td.status-running, td.status-pending { color: var(--muted); }
+.status-candidate, td.status-candidate { color: #b45309; }
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--border);
+}
+
+.btn-danger:hover {
+  border-color: var(--danger);
+}
+
+.candidate-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.candidate-controls select {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  max-width: 100%;
+}
+
+.candidate-editor {
+  display: block;
+  width: 100%;
+  min-height: 55vh;
+  resize: vertical;
+  white-space: pre;
+  font-family: monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+}
+
+.candidate-editor:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 
 #detail-modal {
   position: fixed;

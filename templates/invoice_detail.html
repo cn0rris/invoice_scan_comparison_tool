@@ -30,18 +30,48 @@
     <div class="split-divider" id="split-divider" role="separator" aria-orientation="vertical" aria-label="Resize invoice and ground truth panes" tabindex="0" title="Drag to resize (double-click to reset)"></div>
     <div class="detail-pane" id="ground-truth-pane">
       <h3>Ground Truth</h3>
-      {% if ground_truth_status == "missing" %}
-      <p class="muted">No ground truth file found. Expected at <code>{{ ground_truth_filename }}</code>.</p>
-      {% else %}
+
+      {% if ground_truth_status in ("valid", "invalid") %}
         {% if ground_truth_status == "invalid" %}
         <p class="status-error">⚠ This ground truth file failed schema validation.</p>
         {% endif %}
         <pre id="ground-truth-content" class="json-view">Loading…</pre>
+      {% else %}
+
+      <div id="generate-section" {% if ground_truth_status == "candidate" %}hidden{% endif %}>
+        <p class="muted">
+          No ground truth yet. Generate a candidate with a model, then review, edit if
+          needed, and approve it to make this invoice scoreable.
+        </p>
+        <div class="candidate-controls">
+          <select id="candidate-model-select" aria-label="Model for candidate generation">
+            <option value="">Loading models…</option>
+          </select>
+          <button type="button" id="generate-candidate-btn" class="btn btn-primary">Generate Candidate</button>
+        </div>
+      </div>
+
+      <div id="candidate-editor-section" {% if ground_truth_status != "candidate" %}hidden{% endif %}>
+        <p class="status-candidate">✎ Candidate awaiting review — edit below, then approve.</p>
+        <p class="muted" id="candidate-meta"></p>
+        <textarea id="candidate-editor" class="candidate-editor" spellcheck="false"></textarea>
+        <div class="candidate-controls">
+          <button type="button" id="approve-candidate-btn" class="btn btn-primary">Approve as Ground Truth</button>
+          <button type="button" id="save-candidate-btn" class="btn btn-secondary">Save Draft</button>
+          <button type="button" id="discard-candidate-btn" class="btn btn-danger">Discard</button>
+        </div>
+      </div>
+
+      <div id="candidate-status"></div>
       {% endif %}
     </div>
   </div>
 </section>
 
-<script>window.GROUND_TRUTH_FILENAME_URL = {{ ground_truth_filename_url | tojson }};</script>
+<script>
+  window.GROUND_TRUTH_FILENAME_URL = {{ ground_truth_filename_url | tojson }};
+  window.INVOICE_FILENAME_URL = {{ filename_url | tojson }};
+  window.GROUND_TRUTH_STATUS = {{ ground_truth_status | tojson }};
+</script>
 <script src="/static/js/invoice_detail.js"></script>
 {% endblock %}

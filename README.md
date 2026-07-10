@@ -38,15 +38,28 @@ and matching ground truth in `data/ground_truth/`, so you can try a run immediat
 - **Home** (`/`) — pick models, edit the extraction prompt, and start a run. On submit you're
   redirected to that run's own page.
 - **Invoices** (`/invoices`) — lists every invoice file with its ground-truth status
-  (valid/invalid/missing), and is where you upload new invoices. Uploaded files land directly in
-  `data/invoices/` — the same folder used by every run. Add a matching ground-truth JSON file into
-  `data/ground_truth/` separately, named after the invoice's filename stem (e.g. `my_invoice.pdf`
-  needs `my_invoice.json`) to make it scoreable. The ground truth JSON must match the extraction
-  schema in `app/models/invoice.py` (`InvoiceExtraction`) — see the sample files in
-  `data/ground_truth/` for the shape. Both directories are Docker volumes, so changes on the host
-  are picked up without a rebuild.
+  (valid/invalid/candidate/missing), and is where you upload new invoices. Uploaded files land
+  directly in `data/invoices/` — the same folder used by every run. Both directories are Docker
+  volumes, so changes on the host are picked up without a rebuild.
 - **Runs** (`/runs`) — every run ever started, with its start time, status, and models. Click one
   to open its detail page (live progress while running, full summary once complete).
+
+### Creating ground truth for a new invoice
+
+An invoice needs an approved ground-truth JSON file to be scoreable. The fastest way to make one:
+
+1. Upload the invoice on the **Invoices** page and click through to its detail page.
+2. Pick a model and click **Generate Candidate** — the model extracts the invoice once (with the
+   default prompt) and the result appears as an editable draft next to the invoice image.
+3. Review every value against the invoice, correct anything the model got wrong (use **Save
+   Draft** to keep partial work), and click **Approve as Ground Truth**. Approval validates the
+   draft against the extraction schema and writes it to `data/ground_truth/`.
+
+Candidates live in `data/ground_truth_candidates/` and are never used for scoring — only
+approved files in `data/ground_truth/` count. You can also skip this flow entirely and drop a
+hand-written JSON file into `data/ground_truth/`, named after the invoice's filename stem
+(e.g. `my_invoice.pdf` needs `my_invoice.json`); it must match the extraction schema in
+`app/models/invoice.py` (`InvoiceExtraction`) — see the sample files for the shape.
 
 ### Avoiding accidental re-runs
 

@@ -38,6 +38,7 @@ async def invoices_page(request: Request):
 async def invoice_detail_page(request: Request, filename: str):
     invoice_dir = Path(settings.invoice_dir).resolve()
     ground_truth_dir = Path(settings.ground_truth_dir).resolve()
+    candidate_dir = Path(settings.ground_truth_candidate_dir).resolve()
     safe_name = Path(filename).name  # strip any path components; defends against traversal
     file_path = invoice_dir / safe_name
     if safe_name != filename or file_path.suffix.lower() not in INVOICE_EXTENSIONS or not file_path.is_file():
@@ -53,7 +54,7 @@ async def invoice_detail_page(request: Request, filename: str):
             "filename": safe_name,
             "filename_url": quote(safe_name),
             "is_pdf": file_path.suffix.lower() == ".pdf",
-            "ground_truth_status": ground_truth_status(file_path, ground_truth_dir),
+            "ground_truth_status": ground_truth_status(file_path, ground_truth_dir, candidate_dir),
             "ground_truth_filename": gt_filename,
             "ground_truth_filename_url": quote(gt_filename),
         },

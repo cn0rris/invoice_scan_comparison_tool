@@ -22,12 +22,24 @@ def load_ground_truth_text(invoice_path: Path, ground_truth_dir: Path) -> str | 
     return gt_path.read_text()
 
 
-def ground_truth_status(invoice_path: Path, ground_truth_dir: Path) -> str:
-    """One of 'valid' | 'invalid' | 'missing' — used for display on the invoices page."""
+def candidate_path(invoice_path: Path, candidate_dir: Path) -> Path:
+    return candidate_dir / f"{invoice_path.stem}.json"
+
+
+def candidate_meta_path(invoice_path: Path, candidate_dir: Path) -> Path:
+    return candidate_dir / f"{invoice_path.stem}.meta.json"
+
+
+def ground_truth_status(invoice_path: Path, ground_truth_dir: Path, candidate_dir: Path | None = None) -> str:
+    """One of 'valid' | 'invalid' | 'candidate' | 'missing' — used for display on the
+    invoices page. An approved ground-truth file always wins; 'candidate' means no
+    approved file exists yet but a draft is awaiting review."""
     from app.models.invoice import InvoiceExtraction  # local import: avoids a module-load cycle
 
     gt_text = load_ground_truth_text(invoice_path, ground_truth_dir)
     if gt_text is None:
+        if candidate_dir is not None and candidate_path(invoice_path, candidate_dir).exists():
+            return "candidate"
         return "missing"
     try:
         InvoiceExtraction.model_validate_json(gt_text)
@@ -36,7 +48,7 @@ def ground_truth_status(invoice_path: Path, ground_truth_dir: Path) -> str:
     return "valid"
 
 
-def describe_invoices(invoice_dir: Path, ground_truth_dir: Path) -> list[dict]:
+def describe_invoices(invoice_dir: Path, ground_truth_dir: Path, candidate_dir: Path | None = None) -> list[dict]:
     invoices = []
     for path in list_invoices(invoice_dir):
         stat = path.stat()
@@ -45,7 +57,7 @@ def describe_invoices(invoice_dir: Path, ground_truth_dir: Path) -> list[dict]:
                 "filename": path.name,
                 "size_bytes": stat.st_size,
                 "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-                "ground_truth_status": ground_truth_status(path, ground_truth_dir),
+                "ground_truth_status": ground_truth_status(path, ground_truth_dir, candidate_dir),
                 "ground_truth_filename": f"{path.stem}.json",
             }
         )

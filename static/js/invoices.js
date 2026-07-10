@@ -12,8 +12,8 @@
   }
 
   function gtBadge(status, invoiceFilename) {
-    const label = { valid: "✓ ground truth", invalid: "⚠ invalid ground truth", missing: "no ground truth" }[status] || status;
-    const cls = { valid: "status-success", invalid: "status-error", missing: "status-pending" }[status] || "";
+    const label = { valid: "✓ ground truth", invalid: "⚠ invalid ground truth", candidate: "✎ candidate awaiting review", missing: "no ground truth" }[status] || status;
+    const cls = { valid: "status-success", invalid: "status-error", candidate: "status-candidate", missing: "status-pending" }[status] || "";
     const url = `/invoices/${encodeURIComponent(invoiceFilename)}`;
     return `<a class="file-link ${cls}" href="${url}">${escapeHtml(label)}</a>`;
   }

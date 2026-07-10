@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     db_path: str = "data/db/app.db"
     invoice_dir: str = "data/invoices"
     ground_truth_dir: str = "data/ground_truth"
+    ground_truth_candidate_dir: str = "data/ground_truth_candidates"
 
     anthropic_max_concurrency: int = 3
     ollama_max_concurrency: int = 2

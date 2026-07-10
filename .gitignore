@@ -7,3 +7,5 @@ data/db/*.db
 data/db/*.db-*
 .pytest_cache/
 *.egg-info/
+data/ground_truth_candidates/
+tests/fixtures/
