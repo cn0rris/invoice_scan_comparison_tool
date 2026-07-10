@@ -87,7 +87,11 @@
           row.status === "success"
             ? `${statusIcon(row.status)} ${row.mistake_count} mistake${row.mistake_count === 1 ? "" : "s"}`
             : statusIcon(row.status);
-        html += `<td class="status-${row.status} cell-clickable" data-result-id="${row.id}">${escapeHtml(label)}</td>`;
+        const durationSuffix =
+          (row.status === "success" || row.status === "error") && row.duration_ms != null
+            ? ` <span class="muted">(${escapeHtml(formatDuration(row.duration_ms))})</span>`
+            : "";
+        html += `<td class="status-${row.status} cell-clickable" data-result-id="${row.id}">${escapeHtml(label)}${durationSuffix}</td>`;
       }
       html += "</tr>";
     }

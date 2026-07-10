@@ -64,6 +64,7 @@ async def start_run(run_id: str, models: list[str], prompt: str, invoice_dir: Pa
                     "status": "no_ground_truth",
                     "mistake_count": None,
                     "error_message": None,
+                    "duration_ms": None,
                 },
             )
             continue
@@ -167,6 +168,7 @@ async def process_one(
             "status": status,
             "mistake_count": mistake_count,
             "error_message": error_message,
+            "duration_ms": duration_ms,
         },
     )
     if run is not None:
